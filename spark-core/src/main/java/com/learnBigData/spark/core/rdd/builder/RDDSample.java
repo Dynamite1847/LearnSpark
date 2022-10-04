@@ -14,11 +14,19 @@ public class RDDSample {
                 .setMaster("local[*]")
                 .setAppName("Operator");
         JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
-        List<Integer> numbers = Arrays.asList(1, 2, 3, 4);
-        JavaRDD<Integer> numberRDD = sparkContext.parallelize(numbers,2);
+        List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        JavaRDD<Integer> numberRDD = sparkContext.parallelize(numbers);
 
-        //sample算子需要传递三个参数
-        //第一个参数表示，抽取数据后是否将数据放回
-        //第二个参数表示，数据源中每条数据被抽取的概率
-        numberRDD.sample(false,0.4)
+        /*
+        sample算子需要传递三个参数
+        第一个参数表示，抽取数据后是否将数据放回
+        第二个参数表示，数据源中每条数据被抽取的概率
+        第二个参数设置了一个基准值，
+        第三个参数表示，抽取随机数据时随机算法的种子
+        如果不传递第三个参数，使用的是系统时间
+        */
+        numberRDD.sample(false, 0.4, 1)
+                .collect()
+                .forEach(System.out::println);
+    }
 }
