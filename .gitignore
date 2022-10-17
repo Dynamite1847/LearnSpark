@@ -1,0 +1,5 @@
+# Project exclude paths
+/.gradle/
+/build/
+/spark-core/build/
+/spark-core/build/classes/java/main/
