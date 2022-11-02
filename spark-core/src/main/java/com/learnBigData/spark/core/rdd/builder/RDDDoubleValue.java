@@ -32,7 +32,7 @@ public class RDDDoubleValue {
         JavaRDD<Integer> subtractRDD = numberRDD.subtract(numberRDD1);
         subtractRDD.collect().forEach(System.out::println);
 
-        //拉链
+        //拉链,两个数据源分区数量保持一致，分区数据数量要一致
         JavaPairRDD<Integer,Integer> zipRDD = numberRDD.zip(numberRDD1);
         zipRDD.collect().forEach(System.out::println);
 
