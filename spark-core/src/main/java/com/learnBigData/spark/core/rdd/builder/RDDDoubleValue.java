@@ -22,19 +22,19 @@ public class RDDDoubleValue {
 
         //交集,并集，差集要求数据类型保持一致
         JavaRDD<Integer> intersectionRDD = numberRDD.intersection(numberRDD1);
-        intersectionRDD.collect().forEach(System.out::println);
-
+        intersectionRDD.collect().forEach(System.out::print);
+        System.out.println();
         //并集
         JavaRDD<Integer> unionRDD = numberRDD.union(numberRDD1);
-        unionRDD.collect().forEach(System.out::println);
-
+        unionRDD.collect().forEach(System.out::print);
+        System.out.println();
         //差集
         JavaRDD<Integer> subtractRDD = numberRDD.subtract(numberRDD1);
-        subtractRDD.collect().forEach(System.out::println);
-
+        subtractRDD.collect().forEach(System.out::print);
+        System.out.println();
         //拉链,两个数据源分区数量保持一致，分区数据数量要一致
         JavaPairRDD<Integer,Integer> zipRDD = numberRDD.zip(numberRDD1);
-        zipRDD.collect().forEach(System.out::println);
+        zipRDD.collect().forEach(System.out::print);
 
 
     }
