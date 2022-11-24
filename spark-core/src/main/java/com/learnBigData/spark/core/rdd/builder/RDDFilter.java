@@ -19,9 +19,7 @@ public class RDDFilter {
         List<Integer> numbers = Arrays.asList(1, 2, 3, 4);
         JavaRDD<Integer> numberRDD = sparkContext.parallelize(numbers,2);
 
-        JavaRDD<Integer> oddRDD = numberRDD.filter(i -> {
-            return i % 2 != 0;
-        });
+        JavaRDD<Integer> oddRDD = numberRDD.filter(i -> i % 2 != 0);
         oddRDD.collect().forEach(System.out::println);
     }
 }

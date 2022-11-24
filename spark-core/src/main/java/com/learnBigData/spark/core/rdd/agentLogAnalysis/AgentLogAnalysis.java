@@ -40,7 +40,6 @@ public class AgentLogAnalysis {
             //7.打印结果
             for (Tuple2<Integer, List<Tuple2<Integer, Integer>>> temp : results) {
                 System.out.println(temp);
-
             }
         }
     }

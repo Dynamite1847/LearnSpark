@@ -30,11 +30,7 @@ public class RDDCombineByKey {
         //第二个参数：分区内计算规则
         //第三个参数：分区间的计算规则
         JavaPairRDD<String, Tuple2<Integer,Integer>> reduceRDD = pairs.combineByKey((Function<Integer, Tuple2<Integer, Integer>>) x -> new Tuple2<Integer, Integer>(x, 1), (Function2<Tuple2<Integer, Integer>, Integer, Tuple2<Integer, Integer>>) (v, x) -> new Tuple2<Integer, Integer>(v._1() + x, v._2() + 1),
-                new Function2<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>, Tuple2<Integer, Integer>>() {
-                    public Tuple2<Integer, Integer> call(Tuple2<Integer, Integer> v, Tuple2<Integer, Integer> v1) {
-                        return new Tuple2<Integer, Integer>(v._1() + v1._1(), v._2() + v1._2());
-                    }
-                });
+                (Function2<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>, Tuple2<Integer, Integer>>) (v, v1) -> new Tuple2<Integer, Integer>(v._1() + v1._1(), v._2() + v1._2()));
         reduceRDD.collect().forEach(System.out::println);
     }
 }
