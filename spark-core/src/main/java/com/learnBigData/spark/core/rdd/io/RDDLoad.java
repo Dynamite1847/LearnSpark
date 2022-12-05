@@ -4,6 +4,7 @@ import org.apache.hadoop.thirdparty.com.google.common.collect.Lists;
 import org.apache.spark.Partitioner;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import scala.Tuple2;
 
@@ -13,13 +14,9 @@ public class RDDLoad {
                 .setMaster("local[*]")
                 .setAppName("Operator");
         JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
-        JavaPairRDD<String, String> pairs = sparkContext.parallelizePairs(Lists.newArrayList(
-                new Tuple2<>("nba", "xxxxx"),
-                new Tuple2<>("wnba", "xxxxx"),
-                new Tuple2<>("cba", "xxxxx"),
-                new Tuple2<>("nba", "xxxxx")), 3);
-
+        JavaRDD<String> rdd = sparkContext.textFile("/Users/dongyu/IdeaProjects/LearnSpark/output");
+        rdd.collect().forEach(System.out::println);
+        JavaRDD<Object> rdd1 = sparkContext.objectFile("/Users/dongyu/IdeaProjects/LearnSpark/output1");
+        rdd1.collect().forEach(System.out::println);
     }
-
-
 }
