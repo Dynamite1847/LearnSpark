@@ -5,13 +5,12 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import scala.Int;
+
 import scala.Tuple2;
 import scala.Tuple3;
 
 import java.util.*;
-import java.util.stream.Stream;
+
 
 public class PageFlowAnalysis {
     public static void main(String[] args) {
@@ -40,7 +39,7 @@ public class PageFlowAnalysis {
             JavaPairRDD<Long, Integer> pageCountRDD = filteredActionRDD.mapToPair(userVisitAction -> new Tuple2<>(userVisitAction.getPageId(), 1)).reduceByKey(Integer::sum);
             filteredActionRDD.cache();
             Map<Long, Integer> pageCountMap = pageCountRDD.collectAsMap();
-            JavaPairRDD<String, Iterable<UserVisitAction>> sessionRDD = filteredActionRDD.groupBy(userVisitAction -> userVisitAction.getSessionId());
+            JavaPairRDD<String, Iterable<UserVisitAction>> sessionRDD = filteredActionRDD.groupBy(UserVisitAction::getSessionId);
 
             // 【1，2，3，4】
             // 【1，2】，【2，3】，【3，4】
@@ -52,7 +51,7 @@ public class PageFlowAnalysis {
             JavaPairRDD<String, List<Tuple3<Long,Long,Integer>>> clickFlowPairRDD = sessionRDD.mapValues(iter -> {
                 List<UserVisitAction> list = IteratorUtils.toList(iter.iterator());
                 list.sort(new MyComparator());
-                Long[] sortedPageID = list.stream().map(x -> x.getPageId()).toArray(Long[]::new);
+                Long[] sortedPageID = list.stream().map(UserVisitAction::getPageId).toArray(Long[]::new);
                 List<Tuple3<Long,Long,Integer>> zippedList = new ArrayList<>();
                 for (int i = 0; i < sortedPageID.length - 1; i++) {
                     zippedList.add(new Tuple3<>(sortedPageID[i], sortedPageID[i + 1],1));
@@ -60,7 +59,7 @@ public class PageFlowAnalysis {
                 return zippedList;
             });
             JavaRDD<Tuple3<Long, Long, Integer>> clickFlowRDD = clickFlowPairRDD.flatMap(x -> x._2.iterator());
-            JavaRDD<Tuple3<Long, Long, Integer>> filteredClickFlowRDD = clickFlowRDD.filter(x -> wantedZipList.contains(x));
+            JavaRDD<Tuple3<Long, Long, Integer>> filteredClickFlowRDD = clickFlowRDD.filter(wantedZipList::contains);
             filteredClickFlowRDD.foreach(x-> System.out.println(x));
             JavaPairRDD<Tuple2<Long, Long>, Integer> clickResultPairRDD = filteredClickFlowRDD.mapToPair(x -> new Tuple2<>(new Tuple2<>(x._1(), x._2()), x._3()));
             JavaPairRDD<Tuple2<Long, Long>, Integer> clickResultSum = clickResultPairRDD.reduceByKey(Integer::sum);
