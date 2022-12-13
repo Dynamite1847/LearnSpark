@@ -17,45 +17,43 @@ public class Top10ActiveSession implements Serializable {
         SparkConf sparkConf = new SparkConf()
                 .setMaster("local[*]")
                 .setAppName("Top10HotCategory");
-        JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
+        try (JavaSparkContext sparkContext = new JavaSparkContext(sparkConf)) {
 
-        //1.读取原始日志数据
-        JavaRDD<String> userActionRDD = sparkContext.textFile("/Users/dongyu/IdeaProjects/LearnSpark/spark-core/src/main/resources/user_visit_action.txt");
-        userActionRDD.cache();
-        //2.转换数据结构
-        List<String> top10Click = Arrays.asList(getTop10Click(userActionRDD));
+            //1.读取原始日志数据
+            JavaRDD<String> userActionRDD = sparkContext.textFile("/Users/dongyu/IdeaProjects/LearnSpark/spark-core/src/main/resources/user_visit_action.txt");
+            userActionRDD.cache();
+            //2.转换数据结构
+            List<String> top10Click = Arrays.asList(getTop10Click(userActionRDD));
 
-        for(String click :top10Click){
-            System.out.println(click);
+            for (String click : top10Click) {
+                System.out.println(click);
+            }
+            System.out.println("========================");
+            //3.过滤原始数据，保留点击和前十品类ID
+            JavaRDD<String> filterActionRDD = userActionRDD.filter(x -> {
+                String[] datas = x.split("_");
+                if (!datas[6].equals("-1")) {
+                    return top10Click.contains(datas[6]);
+                } else return false;
+            });
+            //4.根据品类ID和sessionID进行点击量统计
+            JavaPairRDD<Tuple2<String, String>, Integer> reducePairRDD = filterActionRDD.mapToPair(action -> {
+                String[] datas = action.split("_");
+                return new Tuple2<>(new Tuple2<>(datas[6], datas[2]), 1);
+            }).reduceByKey(Integer::sum);
+            //5.将统计结果进行结构转换
+            JavaPairRDD<String, Tuple2<String, Integer>> reduceMapRDD = reducePairRDD.mapToPair((x -> new Tuple2<>(x._1()._1, new Tuple2<>(x._1._2(), x._2))));
+
+            JavaPairRDD<String, Iterable<Tuple2<String, Integer>>> reduceGroupRDD = reduceMapRDD.groupByKey();
+
+
+            JavaPairRDD<String, Object> resultRDD = reduceGroupRDD.mapValues((Function<Iterable<Tuple2<String, Integer>>, Object>) x -> {
+                List<Tuple2<String, Integer>> list = IteratorUtils.toList(x.iterator());
+                list.sort(new myCompare());
+                return list.subList(0, 9);
+            });
+            resultRDD.foreach(x -> System.out.println(x));
         }
-        System.out.println("========================");
-        //3.过滤原始数据，保留点击和前十品类ID
-        JavaRDD<String> filterActionRDD = userActionRDD.filter(x -> {
-            String[] datas = x.split("_");
-            if (!datas[6].equals("-1")) {
-                return top10Click.contains(datas[6]);
-            }else return false;
-        });
-        //4.根据品类ID和sessionID进行点击量统计
-        JavaPairRDD<Tuple2<String, String>, Integer> reducePairRDD = filterActionRDD.mapToPair(action -> {
-            String[] datas = action.split("_");
-            return new Tuple2<>(new Tuple2<>(datas[6], datas[2]), 1);
-        }).reduceByKey((Integer x, Integer y) -> x + y);
-        //5.将统计结果进行结构转换
-        JavaPairRDD<String, Tuple2<String, Integer>> reduceMapRDD = reducePairRDD.mapToPair((x -> new Tuple2<>(x._1()._1, new Tuple2(x._1._2(), x._2))));
-
-        JavaPairRDD<String, Iterable<Tuple2<String, Integer>>> reduceGroupRDD = reduceMapRDD.groupByKey();
-
-
-        JavaPairRDD<String, Object> resultRDD = reduceGroupRDD.mapValues((Function<Iterable<Tuple2<String, Integer>>, Object>) x -> {
-            List list = IteratorUtils.toList(x.iterator());
-            list.sort(new myCompare());
-            return list.subList(0, 9);
-        });
-        resultRDD.foreach(x -> System.out.println(x));
-
-        //6.将结果打印到控制台
-        sparkContext.stop();
     }
 
     private static String[] getTop10Click(JavaRDD<String> userActionRDD) {
@@ -71,7 +69,7 @@ public class Top10ActiveSession implements Serializable {
         JavaRDD<Tuple2<String, Tuple3<Integer, Integer, Integer>>> analysisRDD = resultPairRDD.map(x -> x);
 
         List<Tuple2<String, Tuple3<Integer, Integer, Integer>>> resultsList = analysisRDD.sortBy(x -> x._2()._1(), false, 2).take(10);
-        return resultsList.stream().map(x -> x._1).toArray(value -> new String[value]);
+        return resultsList.stream().map(x -> x._1).toArray(String[]::new);
     }
 
     static Iterator<Tuple2<String, Tuple3<Integer, Integer, Integer>>> call(String action) {

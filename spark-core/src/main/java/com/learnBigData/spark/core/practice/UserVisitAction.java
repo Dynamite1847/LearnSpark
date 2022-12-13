@@ -1,17 +1,36 @@
 package com.learnBigData.spark.core.practice;
 
-public class UserVisitAction {
+import java.io.Serializable;
+
+public class UserVisitAction implements Serializable {
     private String date;
+
+    public UserVisitAction(String date, String userId, String sessionId, Long pageId, String actionTime, String searchKeyword, Long clickCategoryId, Long clickProductId, String orderCategoryIds, String orderProductIds, String payCategoryIds, String payProductIds, Long cityId) {
+        this.date = date;
+        this.userId = userId;
+        this.sessionId = sessionId;
+        this.pageId = pageId;
+        this.actionTime = actionTime;
+        this.searchKeyword = searchKeyword;
+        this.clickCategoryId = clickCategoryId;
+        this.clickProductId = clickProductId;
+        this.orderCategoryIds = orderCategoryIds;
+        this.orderProductIds = orderProductIds;
+        this.payCategoryIds = payCategoryIds;
+        this.payProductIds = payProductIds;
+        this.cityId = cityId;
+    }
+
     private String userId;
     private String sessionId;
-    private long pageId;
+    private Long pageId;
     private String actionTime;
     //用户搜索的关键词
     private String searchKeyword;
     //某一个商品品类的 ID
-    private long clickCategoryId;
+    private Long clickCategoryId;
     //某一个商品的 ID
-    private long clickProductId;
+    private Long clickProductId;
     //一次订单中所有品类的ID集合
     private String orderCategoryIds;
     //一次订单中所有商品的ID集合
