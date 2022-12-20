@@ -1,11 +1,8 @@
 package com.learnBigData.spark.sql;
 
 import org.apache.spark.SparkConf;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.expressions.MutableAggregationBuffer;
-import org.apache.spark.sql.types.*;
+import org.apache.spark.sql.*;
+import org.apache.spark.sql.expressions.Aggregator;
 
 public class UserDefinedAggregateFunction {
     public static void main(String[] args) {
@@ -20,8 +17,7 @@ public class UserDefinedAggregateFunction {
         //DataFrame
         Dataset<Row> df = spark.read().json("/Users/dongyu/IdeaProjects/LearnSpark/spark-core/src/main/resources/user.json").cache();
         df.createOrReplaceTempView("user");
-        spark.udf().register("averageAge",
-               new MyAverageAge());
+        spark.udf().register("averageAge", new UserDefinedAggregateFunctionDeprecated.MyAverageAge());
 
         spark.sql("select averageAge(age) from user").show();
     }
@@ -30,63 +26,68 @@ public class UserDefinedAggregateFunction {
     //自定义聚合函数类：计算年龄的平均值
     //1.继承UserDefinedAggregateFunction
     //2.重写方法
-    static class  MyAverageAge extends org.apache.spark.sql.expressions.UserDefinedAggregateFunction{
+
+    static class MyAverageAge extends Aggregator<Integer,Average,Double>{
+
 
         @Override
-        public StructType inputSchema() {
-            StructField structField = new StructField("age", DataTypes.IntegerType,true, Metadata.empty());
-
-            StructField[] structFieldArray= new StructField[]{structField};
-            return new StructType(structFieldArray);
+        public Average zero() {
+            return new Average(0,0);
         }
 
-        //缓冲区数据结构
         @Override
-        public StructType bufferSchema() {
-            StructField total = new StructField("age", DataTypes.IntegerType,true, Metadata.empty());
-            StructField count = new StructField("age", DataTypes.IntegerType,true, Metadata.empty());
-            StructField[] structFieldArray= new StructField[]{total,count};
-            return new StructType((structFieldArray));
+        public Average reduce(Average buffer, Integer age) {
+            buffer.setCount(buffer.getCount()+1);
+            buffer.setTotal(buffer.getTotal()+age);
+            return buffer;
         }
 
-        //计算结果的数据类型
         @Override
-        public DataType dataType() {
-            return DataTypes.DoubleType;
+        public Average merge(Average buffer1, Average buffer2) {
+            buffer1.setCount(buffer1.getCount()+buffer2.getCount());
+            buffer1.setTotal(buffer1.getTotal()+buffer2.getTotal());
+            return buffer1;
         }
 
-        //函数稳定性：是否有随机数
         @Override
-        public boolean deterministic() {
-            return true;
+        public Double finish(Average reduction) {
+            return (double)reduction.getTotal()/ reduction.getCount();
         }
 
-        //缓冲区初始化
         @Override
-        public void initialize(MutableAggregationBuffer buffer) {
-             buffer.update(0,0);
-             buffer.update(1,0);
+        public Encoder<Average> bufferEncoder() {
+            return Encoders.bean(Average.class);
         }
 
-        //根据输入更新缓冲区
         @Override
-        public void update(MutableAggregationBuffer buffer, Row input) {
-            buffer.update(0,buffer.getInt(0)+ input.getInt(0));
-            buffer.update(1,buffer.getInt(1)+1);
-        }
-
-        //缓冲区数据合并
-        @Override
-        public void merge(MutableAggregationBuffer buffer1, Row buffer2) {
-            buffer1.update(0,buffer1.getInt(0)+buffer2.getInt(0));
-            buffer1.update(1,buffer1.getInt(1)+buffer2.getInt(1));
-        }
-
-        //计算平均
-        @Override
-        public Double evaluate(Row buffer) {
-            return  (double)buffer.getInt(0)/buffer.getInt(1);
+        public Encoder<Double> outputEncoder() {
+            return Encoders.DOUBLE() ;
         }
     }
 
+    public static class Average{
+        Integer count;
+        Integer total;
+
+        public Average(Integer count, Integer total) {
+            this.count = count;
+            this.total = total;
+        }
+
+        public Integer getCount() {
+            return count;
+        }
+
+        public void setCount(Integer count) {
+            this.count = count;
+        }
+
+        public Integer getTotal() {
+            return total;
+        }
+
+        public void setTotal(Integer total) {
+            this.total = total;
+        }
+    }
 }
