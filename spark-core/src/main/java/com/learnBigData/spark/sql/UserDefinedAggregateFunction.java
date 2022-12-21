@@ -4,20 +4,22 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.expressions.Aggregator;
 
+import java.io.Serializable;
+
 public class UserDefinedAggregateFunction {
     public static void main(String[] args) {
         SparkConf sparkConf = new SparkConf()
                 .setMaster("local[*]")
                 .setAppName("Spark sql intro");
         SparkSession spark = SparkSession
-                .builder()
+                .builder().enableHiveSupport()
                 .config(sparkConf)
                 .getOrCreate();
 
         //DataFrame
         Dataset<Row> df = spark.read().json("/Users/dongyu/IdeaProjects/LearnSpark/spark-core/src/main/resources/user.json").cache();
         df.createOrReplaceTempView("user");
-        spark.udf().register("averageAge", new UserDefinedAggregateFunctionDeprecated.MyAverageAge());
+        spark.udf().register("averageAge", functions.udaf(new MyAverageAge(),Encoders.INT()));
 
         spark.sql("select averageAge(age) from user").show();
     }
@@ -65,13 +67,16 @@ public class UserDefinedAggregateFunction {
         }
     }
 
-    public static class Average{
-        Integer count;
+    public static class Average implements Serializable {
+        Integer count ;
         Integer total;
 
         public Average(Integer count, Integer total) {
             this.count = count;
             this.total = total;
+        }
+
+        public Average() {
         }
 
         public Integer getCount() {
